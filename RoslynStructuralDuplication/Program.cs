@@ -1,4 +1,7 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 
 namespace RoslynStructuralDuplication;
 
@@ -6,17 +9,52 @@ class Program
 {
     private sealed class StructuralDuplicateFeature : CSharpSyntaxRewriter
     {
+        private string SuggestUniqueName(string baseName, ISet<string> taken)
+        {
+            for (int i = 2; i < int.MaxValue; i++)
+            {
+                var candidate = baseName + i.ToString();
+                if (!taken.Contains(candidate))
+                    return candidate;
+            }
+            return baseName + "_dup";
+        }
+        
+        // public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+        // {
+        //     var plist = node.ParameterList;
+        //     if (plist is null || plist.Parameters.Count != 1)
+        //         return base.VisitMethodDeclaration(node);
+        //
+        //     var originalParam = plist.Parameters[0];
+        //     
+        //     var taken = new HashSet<string>(
+        //         plist.Parameters.Select(p => p.Identifier.ValueText),
+        //         StringComparer.Ordinal);
+        //
+        //     var suggested = SuggestUniqueName(originalParam.Identifier.ValueText, taken);
+        //     
+        //     var duplicated = originalParam.WithIdentifier(
+        //         SyntaxFactory.Identifier(suggested).WithTriviaFrom(originalParam.Identifier));
+        //     
+        //     var newParams = plist.Parameters.Add(duplicated);
+        //     var newPlist  = plist.WithParameters(newParams);
+        //
+        //     var updatedMethod = node.WithParameterList(newPlist);
+        //     return base.VisitMethodDeclaration(updatedMethod);
+        // }
+        
         public string ProcessSingleParameterMethods(string content)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(content);
             var rootNode = syntaxTree.GetRoot();
             
-            Console.WriteLine(rootNode.Kind());  
+            var newRoot = Visit(rootNode);
             
-            foreach (var node in rootNode.DescendantNodes())
-                Console.WriteLine(node.Kind());
+            using var workspace = new AdhocWorkspace();
+            var formatted = Formatter.Format(newRoot!, workspace);
 
-            return "";
+            return formatted.ToFullString();
         }
     }
     
@@ -24,7 +62,7 @@ class Program
     {
         if (args.Length != 1)
         {
-            Console.WriteLine("Usage: RoslynStructuralDuplication.exe <input.cs> ");
+            Console.WriteLine("Usage: RoslynStructuralDuplication.exe <input.cs>");
             return 1;
         }
         
@@ -43,6 +81,10 @@ class Program
             var outputFileContent = feature
                 .ProcessSingleParameterMethods(inputFileContent);
 
+            var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "Output.cs");
+            File.WriteAllText(outputPath, outputFileContent);
+
+            Console.WriteLine($"Output file created at: {outputPath}");
         }
         catch (Exception e)
         {
