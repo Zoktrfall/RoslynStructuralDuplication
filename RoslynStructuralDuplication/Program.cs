@@ -9,51 +9,34 @@ class Program
 {
     private sealed class StructuralDuplicateFeature : CSharpSyntaxRewriter
     {
-        private string SuggestUniqueName(string baseName, ISet<string> taken)
+        public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            for (int i = 2; i < int.MaxValue; i++)
-            {
-                var candidate = baseName + i.ToString();
-                if (!taken.Contains(candidate))
-                    return candidate;
-            }
-            return baseName + "_dup";
-        }
+            var parameterList = node.ParameterList;
+            if (parameterList.Parameters.Count != 1)
+                return base.VisitMethodDeclaration(node);
         
-        // public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
-        // {
-        //     var plist = node.ParameterList;
-        //     if (plist is null || plist.Parameters.Count != 1)
-        //         return base.VisitMethodDeclaration(node);
-        //
-        //     var originalParam = plist.Parameters[0];
-        //     
-        //     var taken = new HashSet<string>(
-        //         plist.Parameters.Select(p => p.Identifier.ValueText),
-        //         StringComparer.Ordinal);
-        //
-        //     var suggested = SuggestUniqueName(originalParam.Identifier.ValueText, taken);
-        //     
-        //     var duplicated = originalParam.WithIdentifier(
-        //         SyntaxFactory.Identifier(suggested).WithTriviaFrom(originalParam.Identifier));
-        //     
-        //     var newParams = plist.Parameters.Add(duplicated);
-        //     var newPlist  = plist.WithParameters(newParams);
-        //
-        //     var updatedMethod = node.WithParameterList(newPlist);
-        //     return base.VisitMethodDeclaration(updatedMethod);
-        // }
+            var originalParameter = parameterList.Parameters[0];
+            
+            var duplicatedParameter = originalParameter.WithIdentifier(
+                SyntaxFactory.Identifier("EnterNewName")
+                    .WithTriviaFrom(originalParameter.Identifier));
+            
+            var newParams = parameterList.Parameters.Add(duplicatedParameter);
+            var newPlist  = parameterList.WithParameters(newParams);
+        
+            var updatedMethod = node.WithParameterList(newPlist);
+            return base.VisitMethodDeclaration(updatedMethod);
+        }
         
         public string ProcessSingleParameterMethods(string content)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(content);
             var rootNode = syntaxTree.GetRoot();
             
-            var newRoot = Visit(rootNode);
+            var newRootNode = Visit(rootNode);
             
             using var workspace = new AdhocWorkspace();
-            var formatted = Formatter.Format(newRoot!, workspace);
-
+            var formatted = Formatter.Format(newRootNode, workspace);
             return formatted.ToFullString();
         }
     }
@@ -75,15 +58,14 @@ class Program
 
         try
         {
-            var feature = new StructuralDuplicateFeature();
+            var duplicateFeature = new StructuralDuplicateFeature();
             
             var inputFileContent = File.ReadAllText(inputFile);
-            var outputFileContent = feature
+            var outputFileContent = duplicateFeature
                 .ProcessSingleParameterMethods(inputFileContent);
 
             var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "Output.cs");
             File.WriteAllText(outputPath, outputFileContent);
-
             Console.WriteLine($"Output file created at: {outputPath}");
         }
         catch (Exception e)

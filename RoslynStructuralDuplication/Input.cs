@@ -6,6 +6,11 @@ class Demo
     {
         Console.WriteLine(host);
     }
+    
+    class C {
+        bool Test(C test) { return true; }
+        bool EnterNewName(string name) { return true; }
+    }
 
     static void TwoParameters(int hello, string world)
     {
