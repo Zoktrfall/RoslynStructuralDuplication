@@ -9,7 +9,7 @@ class Demo
     
     class C {
         bool Test(C test) { return true; }
-        bool EnterNewName(string name) { return true; }
+        bool EnterNewName(string EnterNewName) { return true; }
     }
 
     static void TwoParameters(int hello, string world)

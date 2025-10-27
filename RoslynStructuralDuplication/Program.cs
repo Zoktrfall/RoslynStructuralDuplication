@@ -21,10 +21,10 @@ class Program
                 SyntaxFactory.Identifier("EnterNewName")
                     .WithTriviaFrom(originalParameter.Identifier));
             
-            var newParams = parameterList.Parameters.Add(duplicatedParameter);
-            var newPlist  = parameterList.WithParameters(newParams);
+            var newParameters = parameterList.Parameters.Add(duplicatedParameter);
+            var newParametersList  = parameterList.WithParameters(newParameters);
         
-            var updatedMethod = node.WithParameterList(newPlist);
+            var updatedMethod = node.WithParameterList(newParametersList);
             return base.VisitMethodDeclaration(updatedMethod);
         }
         
@@ -71,6 +71,7 @@ class Program
         catch (Exception e)
         {
             Console.WriteLine(e);
+            return 3;
         }
         
         return 0;
