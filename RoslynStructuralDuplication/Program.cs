@@ -9,6 +9,20 @@ class Program
 {
     private sealed class StructuralDuplicateFeature : CSharpSyntaxRewriter
     {
+        private static string SuggestAnotherName(SyntaxToken id)
+        {
+            var text = id.Text;
+            int j = text.Length;
+            while (j > 0 && char.IsDigit(text[j - 1]))
+                j--;
+
+            if (j == text.Length)
+                text += "2";
+            else
+                text = text[..j] + (int.Parse(text[j..]) + 1);
+
+            return text;
+        }
         public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             var parameterList = node.ParameterList;
@@ -18,7 +32,7 @@ class Program
             var originalParameter = parameterList.Parameters[0];
             
             var duplicatedParameter = originalParameter.WithIdentifier(
-                SyntaxFactory.Identifier("EnterNewName")
+                SyntaxFactory.Identifier(SuggestAnotherName(originalParameter.Identifier))
                     .WithTriviaFrom(originalParameter.Identifier));
             
             var newParameters = parameterList.Parameters.Add(duplicatedParameter);
