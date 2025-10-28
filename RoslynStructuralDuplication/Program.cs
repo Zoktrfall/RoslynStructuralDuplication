@@ -11,18 +11,17 @@ class Program
     {
         private static string SuggestAnotherName(SyntaxToken id)
         {
-            var text = id.Text;
-            int j = text.Length;
-            while (j > 0 && char.IsDigit(text[j - 1]))
-                j--;
+            var name = id.Text;
+            var index = name.Length;
+            while (index > 0 && char.IsDigit(name[index - 1]))
+                index--;
 
-            if (j == text.Length)
-                text += "2";
-            else
-                text = text[..j] + (int.Parse(text[j..]) + 1);
-
-            return text;
+            if (index == name.Length)
+                return name + "2";
+            
+            return name[..index] + (int.Parse(name[index..]) + 1);;
         }
+        
         public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             var parameterList = node.ParameterList;
