@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using System.IO;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
@@ -19,7 +21,7 @@ class Program
             if (index == name.Length)
                 return name + "2";
             
-            return name[..index] + (int.Parse(name[index..]) + 1);;
+            return name[..index] + (int.Parse(name[index..]) + 1);
         }
         
         public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
@@ -34,10 +36,9 @@ class Program
                 SyntaxFactory.Identifier(SuggestAnotherName(originalParameter.Identifier))
                     .WithTriviaFrom(originalParameter.Identifier));
             
-            var newParameters = parameterList.Parameters.Add(duplicatedParameter);
-            var newParametersList  = parameterList.WithParameters(newParameters);
+            var newParameterList = parameterList.AddParameters(duplicatedParameter);
         
-            var updatedMethod = node.WithParameterList(newParametersList);
+            var updatedMethod = node.WithParameterList(newParameterList);
             return base.VisitMethodDeclaration(updatedMethod);
         }
         
